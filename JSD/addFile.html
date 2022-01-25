@@ -1,0 +1,237 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Home</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css"
+        integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel='stylesheet' href='css/common.css'>
+</head>
+
+<body>
+    <header>
+        <p class="header1"> Files Management</p>
+    </header>
+    <div class="container">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <span>
+                    <span><button type="button" class="btn btn-light dropdown-toggle" data-toggle="collapse"
+                            data-target="#menu">
+                            Setting <i class="fas fa-cogs"></i> </button>
+                        <span class="collap">
+                            <div id="menu" class="collapse">
+                                <form action="#" th:action=@{/saveSetting} th:object="${setting}" id="settingForm">
+                                    <div class="form-group">
+                                        <label for=size>Max file size(MB)</label>
+                                        <input type="number" class="form-control" id="size" value="500"
+                                            th:field="*{maxFileSize}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for=item>Item per page</label>
+                                        <input type="number" class="form-control" id="item" value="10"
+                                            th:field="*{itemPerPage}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="type">Allowed upload type</label>
+                                        <select name="type" class="custom-select" id="type"
+                                            th:field="*{mimeTypeAllowed}">
+                                            <option value="image" selected>Image</option>
+                                            <option value="video">Video</option>
+                                            <option value="audio">Audio</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <button class="btn btn-success" type="submit" id="submitBtnSave">Save</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </span>
+                    </span>
+                    <span class="align-right">
+                        <form id="submitFile" enctype="multipart/form-data">
+                            <input type="file" id="myFile" name="filename" accept="image/*">
+                            <button id="submitBtnFile" type="button" class="btn btn-primary align-center">
+                                Upload</button>
+                        </form>
+                    </span>
+                </span>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Index</th>
+                            <th>File Name</th>
+                            <th>Version</th>
+                            <th>File size (MB)</th>
+                            <th>Created Time</th>
+                            <th>Download</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-list">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <ul class="pagination justify-content-end btn-group">
+                <li class="page-item" id="first"><button class="btn btn-primary">First</button></li>
+                <li class="page-item" id="previous"><button class="btn btn-primary">Previous</button></li>
+                <li class="page-item" id="next"><button class="btn btn-primary">Next</button></li>
+            </ul>
+        </div>
+    </div>
+    <footer class="site-footer">
+        <div class="footer-inner bg-dark">
+            <div class="row footer-container no-padding">
+                <div class="col-sm-6 text-left-footer">
+                    Copyright &copy; 2021 ManyKindOfStuff Co.
+                </div>
+                <div class="col-sm-6 text-right-footer">
+                    Designed by NotFunStuff
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous">
+</script>
+
+<script>
+    async function loadJson() {
+        await fetch(`http://localhost:8080/setting`, {
+            method: 'GET'
+        }).then(r => r.json()).then(res => {
+            localStorage.setItem("maxFileSize", res.maxFileSize)
+            localStorage.setItem("itemPerPage", res.itemPerPage)
+            localStorage.setItem("mimeAllowed", res.mimeTypeAllowed)
+        })
+
+        await fetch(`http://localhost:8080/files`, {
+                method: 'GET'
+            }).then(r => r.json())
+            .then(res => {
+                var entry = ''
+                var itemPerPage = localStorage.getItem("itemPerPage")
+                count = 0;
+                res.forEach(element => {
+                    if (count >= itemPerPage * (localStorage.getItem("Page") - 1) && count <
+                        itemPerPage * localStorage.getItem("Page") && element.fileSize <= (localStorage
+                            .getItem("maxFileSize") * 1000000) && element.mime.includes(localStorage
+                            .getItem("mimeAllowed"))) {
+                        entry += `<tr>
+                                <td>${element.id}</td>
+                                <td>${element.name}</td>
+                                <td>${element.version}</td>
+                                <td>${element.fileSize / 1000000}</td>
+                                <td>${element.createdDataTime}</td>
+                                <td>${element.numberOfDownload}</td>
+                                <td> <div class="btn-group btn-group-sml">
+                                    <a href="javascript:downloadFile('${String(element.id)}')"><button type="button" class="btn btn-warning"><i class="fas fa-download"></i></button></a>
+                                    <a href="javascript:confirmDelete('${String(element.id)}')"><button type="button" class="btn btn-danger"><i class="fas fa-trash"></i></button> </a></div>
+                                </tr>`
+                        count++;
+                    }
+                });
+                document.querySelector('#table-list').innerHTML = entry
+            })
+
+        if (localStorage.getItem("Page") <= 1) {
+            document.querySelector("#previous").classList.add("hidden")
+        }
+
+        console.log(localStorage.getItem("mimeTypeAllowed"));
+
+        if (localStorage.getItem("mimeAllowed") === "video") {
+            document.querySelector('#myFile').accept = "video/*"
+        } else if (localStorage.getItem("mimeAllowed") === "audio") {
+            document.querySelector('#myFile').accept = "audio/*"
+        } else if (localStorage.getItem("mimeAllowed") === "image") {
+            document.querySelector('#myFile').accept = "image/*"
+        }
+    }
+    document.querySelector('#submitBtnSave').addEventListener("click", async () => {
+        await fetch(`http://localhost:8080/saveSetting`, {
+            method: 'POST',
+            body: JSON.stringify({
+                id: 0,
+                maxFileSize: document.getElementById("size").value,
+                itemPerPage: document.getElementById("item").value,
+                mimeTypeAllowed: document.getElementById("type").value,
+                lastUpdatedTime: Date.now
+            })
+        })
+        location.reload()
+    })
+
+    document.querySelector('#submitBtnFile').addEventListener("click", async () => {
+        const formData = new FormData();
+        const data = document.getElementById("myFile").files[0]
+        formData.append("file", data);
+        var options = {
+            method: 'POST',
+            body: formData
+        }
+        await fetch(`http://localhost:8080/upload`, options)
+        location.reload()
+    })
+
+    async function confirmDelete(uid) {
+        var r = confirm("Are you sure you want to delete?")
+        if (r) {
+            const response = await fetch('http://localhost:8080/delete/?fileId=' + uid, {
+                method: 'DELETE'
+            })
+            location.reload()
+        }
+    }
+
+    async function downloadFile(uid) {
+        const response = await fetch('http://localhost:8080/download?fileId=' + uid, {
+            method: 'GET'
+        }).then((res) => {
+            return res.json()
+        }).then((data) => {
+            console.log(data);
+            var a = document.createElement("a");
+            a.href = data.path;
+            a.setAttribute("download", data.name);
+            a.click();
+            location.reload()
+        })
+
+    }
+
+    document.querySelector('#previous').addEventListener("click", async () => {
+        localStorage.setItem("Page", localStorage.getItem("Page") - 1)
+        location.reload()
+    })
+
+    document.querySelector('#next').addEventListener("click", async () => {
+        localStorage.setItem("Page", Number(localStorage.getItem("Page")) + 1)
+        location.reload()
+    })
+
+    document.querySelector('#first').addEventListener("click", async () => {
+        localStorage.setItem("Page", 1)
+        location.reload()
+    })
+
+    loadJson()
+</script>
+
+</html>
